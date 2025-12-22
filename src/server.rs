@@ -1,17 +1,22 @@
 use std::error::Error;
 use tokio::{signal, sync::mpsc};
-use tonic::transport::Server;
+use tonic::{include_file_descriptor_set, transport::Server};
 use tonic_reflection::server::Builder;
 use tonic_web::GrpcWebLayer;
 
 use crate::user;
+use crate::weather;
 
-const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../descriptor.binpb");
+const FILE_DESCRIPTOR_SET: &[u8] = include_file_descriptor_set!("tonic_descriptor");
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
-    let reflection_service = Builder::configure()
+    let reflection_service_v1 = Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
         .build_v1()?;
+
+    let reflection_service_v1alpha = Builder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .build_v1alpha()?;
 
     let addr = "127.0.0.1:50051".parse()?;
 
@@ -24,8 +29,10 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         .accept_http1(true)
         // .layer(tower_http::cors::CorsLayer::new())
         .layer(GrpcWebLayer::new())
-        .add_service(reflection_service)
+        .add_service(reflection_service_v1)
+        .add_service(reflection_service_v1alpha)
         .add_service(user::get_service())
+        .add_service(weather::get_service())
         // .serve(addr)
         .serve_with_shutdown(addr, shutdown_signal)
         .await?;

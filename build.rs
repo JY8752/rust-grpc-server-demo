@@ -1,17 +1,41 @@
-use prost::Message;
-use prost_types::FileDescriptorSet;
-use std::fs;
+use protocheck_build::compile_protos_with_validators;
+use tonic_prost_build::Config;
 
-const DESCRIPTOR_PATH: &str = "descriptor.binpb";
-
+// ref: https://github.com/Rick-Phoenix/protocheck-tonic-svelte-example/blob/main/server/build.rs
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let b = fs::read(DESCRIPTOR_PATH)?;
-    let fds = FileDescriptorSet::decode(b.as_slice())?;
+    println!("cargo:rerun-if-changed=proto/");
 
+    let out_dir =
+        std::path::PathBuf::from(std::env::var("OUT_DIR").expect("Could not find OUT_DIR"));
+    let final_descriptor_path = out_dir.join("tonic_descriptor.bin");
+
+    let mut config = Config::new();
+    config
+        .file_descriptor_set_path(final_descriptor_path.clone())
+        .bytes(["."])
+        .out_dir(out_dir.clone());
+
+    let proto_include_paths = &["proto"];
+
+    let proto_files = &["proto/user/v1/user.proto", "proto/weather/v1/weather.proto"];
+
+    compile_protos_with_validators(
+        &mut config,
+        proto_files,
+        proto_include_paths,
+        &["user.v1", "weather.v1"],
+    )?;
+
+    // Compile protos
     tonic_prost_build::configure()
-        .build_server(true)
-        .build_client(true)
-        .compile_fds(fds)?;
+        .build_client(false)
+        .compile_with_config(config, proto_files, proto_include_paths)?;
+
+    // Set the env for the file descriptor location
+    println!(
+        "cargo:rustc-env=PROTO_DESCRIPTOR_SET={}",
+        final_descriptor_path.display()
+    );
 
     Ok(())
 }

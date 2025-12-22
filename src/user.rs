@@ -7,6 +7,7 @@ use proto::v1::{
 };
 
 use crate::store::Store;
+use crate::validate;
 
 mod proto {
     pub mod v1 {
@@ -47,21 +48,24 @@ impl proto::v1::user_service_server::UserService for UserService {
         &self,
         request: Request<CreateUserRequest>,
     ) -> Result<Response<CreateUserResponse>, Status> {
-        let req = request.into_inner();
-        let id = Uuid::new_v4().to_string();
+        validate::execute(request, |req| async {
+            let req = req.into_inner();
+            let id = Uuid::new_v4().to_string();
 
-        self.store
-            .write(
-                &id,
-                User {
-                    id: id.clone(),
-                    name: req.name,
-                    email: req.email,
-                },
-            )
-            .await;
+            self.store
+                .write(
+                    id.clone(),
+                    User {
+                        id: id.clone(),
+                        name: req.name,
+                        email: req.email,
+                    },
+                )
+                .await;
 
-        Ok(Response::new(CreateUserResponse { id }))
+            Ok(Response::new(CreateUserResponse { id }))
+        })
+        .await
     }
 
     async fn get_user(
@@ -72,9 +76,9 @@ impl proto::v1::user_service_server::UserService for UserService {
 
         if let Some(user) = self.store.read(&req.id).await {
             Ok(Response::new(GetUserResponse {
-                id: user.id.clone(),
-                name: user.name.clone(),
-                email: user.email.clone(),
+                id: user.id,
+                name: user.name,
+                email: user.email,
             }))
         } else {
             Err(Status::not_found(format!("User not found: {}", req.id)))

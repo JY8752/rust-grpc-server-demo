@@ -2,14 +2,16 @@ syntax = "proto3";
 
 package user.v1;
 
+import "buf/validate/validate.proto";
+
 service UserService {
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
 }
 
 message CreateUserRequest {
-  string name = 1;
-  string email = 2;
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string email = 2 [(buf.validate.field).string.email = true];
 }
 
 message CreateUserResponse {
@@ -17,7 +19,7 @@ message CreateUserResponse {
 }
 
 message GetUserRequest {
-  string id = 1;
+  string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 message GetUserResponse {

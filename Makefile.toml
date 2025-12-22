@@ -1,13 +1,3 @@
-[tasks.install-buf]
-description = "Buf CLIを.binディレクトリにインストール"
-script = '''
-mkdir -p .bin
-curl -sSL "https://github.com/bufbuild/buf/releases/latest/download/buf-$(uname -s)-$(uname -m)" -o .bin/buf
-chmod +x .bin/buf
-echo "Buf CLI installed: $(.bin/buf --version)"
-'''
-
-[tasks.buf-build]
-description = "file descriptor setを生成"
-dependencies = ["install-buf"]
-script = ".bin/buf build --as-file-descriptor-set -o descriptor.binpb"
+[tasks.install-protovalidate]
+description = "buf/validate/validate.protoをインストールしてくる"
+script = "buf export buf.build/bufbuild/protovalidate -o proto"

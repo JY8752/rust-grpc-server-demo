@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package weather.v1;
+
+import "buf/validate/validate.proto";
+
+service WeatherService {
+  rpc GetWeather(GetWeatherRequest) returns (GetWeatherResponse);
+}
+
+message GetWeatherRequest {
+  string city = 1 [(buf.validate.field).string = {
+    in: [
+      "tokyo",
+      "osaka"
+    ]
+  }];
+}
+
+message GetWeatherResponse {
+  enum Weather {
+    WEATHER_UNSPECIFIED = 0;
+    WEATHER_SUNNY = 1;
+    WEATHER_CLOUDY = 2;
+    WEATHER_RAINY = 3;
+    WEATHER_SNOWY = 4;
+  }
+  Weather weather = 1;
+}

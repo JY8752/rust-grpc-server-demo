@@ -16,8 +16,8 @@ impl<T> Store<T> {
         Self(Arc::new(RwLock::new(HashMap::new())))
     }
 
-    pub async fn write(&self, id: &ID, value: T) {
-        self.0.write().await.insert(id.clone(), value);
+    pub async fn write(&self, id: ID, value: T) -> () {
+        self.0.write().await.insert(id, value);
     }
 }
 
